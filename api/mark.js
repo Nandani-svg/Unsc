@@ -44,7 +44,7 @@ Reply with ONLY this JSON object:
  "transcription": "exact text of the chit",
  "detected_type": "normal" | "substantive",
  "type_reason": "one short sentence",
- "from": "sender or null", "to": "recipient or null", "via": "via line or null", "subject": "purpose in a few words",
+ "from": "the sender's country name only, e.g. \"France\" (no \"Delegate of\", no notes), or null", "to": "recipient or null", "via": "via line or null", "subject": "purpose in a few words",
  "format": {"has_from": true, "has_to": true, "has_via_eb": true, "has_clear_purpose": true, "third_person": true, "diplomatic": true, "concise": true},
  "scores": {"relevance": 0, "substance": 0, "accuracy": 0, "format": 0, "language": 0},
  "factual_issues": ["…"],

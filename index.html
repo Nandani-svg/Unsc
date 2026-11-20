@@ -438,7 +438,31 @@ async function removeEntry(id){
 function saveLocal(){ try{ localStorage.setItem("chitRegister", JSON.stringify(entries)); }catch{} }
 function loadLocal(){ try{ entries = JSON.parse(localStorage.getItem("chitRegister") || "[]"); }catch{ entries = []; } }
 
-function normName(s){ return String(s).replace(/^\s*(the\s+)?(delegate|delegation)\s+of\s+/i,"").replace(/^\s*from\s*:?\s*/i,"").trim() || "Unknown"; }
+/* One name per delegation, however the chit spelled it. */
+const ALIASES = {
+  "drc":"DRC","dr congo":"DRC","d.r.c":"DRC","congo drc":"DRC","democratic republic of the congo":"DRC","democratic republic of congo":"DRC","drc congo":"DRC",
+  "netherland":"Netherlands","holland":"Netherlands","kingdom of the netherlands":"Netherlands",
+  "usa":"United States","us":"United States","u.s.a":"United States","u.s":"United States","united states of america":"United States","america":"United States",
+  "uk":"United Kingdom","u.k":"United Kingdom","great britain":"United Kingdom","britain":"United Kingdom",
+  "russian federation":"Russia","republic of korea":"South Korea","korea":"South Korea","rok":"South Korea",
+  "prc":"China","people's republic of china":"China","peoples republic of china":"China",
+  "uae":"United Arab Emirates","state of palestine":"Palestine","ksa":"Saudi Arabia","kingdom of saudi arabia":"Saudi Arabia",
+  "islamic republic of iran":"Iran","syrian arab republic":"Syria","türkiye":"Turkey","turkiye":"Turkey","state of israel":"Israel",
+  "swiss confederation":"Switzerland","state of qatar":"Qatar","kingdom of spain":"Spain","kingdom of norway":"Norway","french republic":"France"
+};
+const SMALL = new Set(["of","the","and","de"]);
+function normName(s){
+  let t = String(s || "")
+    .replace(/\([^)]*\)?/g," ").replace(/\[[^\]]*\]?/g," ")
+    .replace(/^\s*(from|fron|frm|form)\s*[:\-–—]?\s*/i,"")
+    .replace(/^\s*(the\s+)?(delegate|delegation|delegates)\s+(of|from)\s+/i,"")
+    .replace(/^\s*the\s+/i,"")
+    .replace(/[.,;:'"!?\-–—\s]+$/,"").replace(/^['"\s]+/,"").replace(/\s+/g," ").trim();
+  if (!t) return "Unknown";
+  const k = t.toLowerCase().replace(/\.$/,"");
+  if (ALIASES[k]) return ALIASES[k];
+  return t.split(" ").map((w,i) => (/^[A-Z.]{2,5}$/.test(w)) ? w : (i && SMALL.has(w.toLowerCase())) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
 
 function renderRegister(){
   const log = $("#log"), tally = $("#tally");
@@ -465,8 +489,8 @@ function renderRegister(){
 
 function csv(){
   const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const head = ["Time","From","To","Type","Mark","Calculated","Overridden","AI %","AI band","Summary","Excerpt"];
-  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [new Date(e.at).toLocaleString(), normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.ai, e.band, e.summary, e.excerpt]);
+  const head = ["Time","From","To","Type","Mark","Calculated","Overridden","Summary","Excerpt"];
+  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [new Date(e.at).toLocaleString(), normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
   return [head, ...rows].map(r => r.map(q).join(",")).join("\n");
 }
 $("#copyCsv").onclick = async () => {
