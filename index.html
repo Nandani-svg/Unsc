@@ -475,10 +475,10 @@ function renderRegister(){
   log.innerHTML = `<tr><th>Time</th><th>From</th><th>To</th><th>Type</th><th class="num">Mark</th><th class="num">AI</th><th>Note</th><th></th></tr>` +
     sorted.map(e => `<tr><td>${new Date(e.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</td><td>${esc(normName(e.from))}</td><td>${esc(e.to)}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}${e.overridden ? "*" : ""}</td><td class="num">${e.band === "likely" ? `<span class="chip bad">${e.ai}%</span>` : e.band === "possible" ? `<span class="chip warn">${e.ai}%</span>` : e.ai + "%"}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small ghost" data-del="${esc(e.id)}" type="button" aria-label="Remove this chit">Remove</button></td></tr>`).join("");
   const by = {};
-  for (const e of entries){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0,ai:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } if (e.band !== "clear") t.ai++; }
+  for (const e of entries){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } }
   const rows = Object.entries(by).map(([k,t]) => ({k,...t,total:t.ns+t.ss})).sort((a,b) => b.total - a.total);
-  tally.innerHTML = `<tr><th>Delegation</th><th class="num">Normal chits</th><th class="num">Normal marks</th><th class="num">Substantive chits</th><th class="num">Substantive marks</th><th class="num">AI flags</th><th class="num">Total</th></tr>` +
-    rows.map(r => `<tr><td>${esc(r.k)}</td><td class="num">${r.n}</td><td class="num">${r.ns.toFixed(1)}</td><td class="num">${r.s}</td><td class="num">${r.ss.toFixed(1)}</td><td class="num">${r.ai}</td><td class="num"><b>${r.total.toFixed(1)}</b></td></tr>`).join("");
+  tally.innerHTML = `<tr><th>Delegation</th><th class="num">Normal chits</th><th class="num">Normal marks</th><th class="num">Substantive chits</th><th class="num">Substantive marks</th><th class="num">Total</th></tr>` +
+    rows.map(r => `<tr><td>${esc(r.k)}</td><td class="num">${r.n}</td><td class="num">${r.ns.toFixed(1)}</td><td class="num">${r.s}</td><td class="num">${r.ss.toFixed(1)}</td><td class="num"><b>${r.total.toFixed(1)}</b></td></tr>`).join("");
   log.querySelectorAll("[data-del]").forEach(b => {
     b.onclick = () => {
       if (b.dataset.armed){ removeEntry(b.dataset.del); return; }
