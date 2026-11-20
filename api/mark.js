@@ -66,6 +66,7 @@ function parseJson(text) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === "GET") return res.status(200).json({ ready: !!process.env.ANTHROPIC_API_KEY });
   if (req.method !== "POST") { res.setHeader("Allow", "POST"); return res.status(405).json({ code: "method", message: "Use POST." }); }
   const need = process.env.ACCESS_CODE;
   if (need && req.headers["x-access-code"] !== need) {

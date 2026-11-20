@@ -120,6 +120,12 @@ img{max-width:100%}
     <p class="agenda">Agenda: Addressing the Expansion of Proxy Warfare Through State-Sponsored Non-State Armed Groups and Private Military Actors and Its Implications for International Peace and Security.</p>
   </header>
 
+  <div id="noKey" hidden style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:16px;display:grid;gap:10px">
+    <strong>Marking runs on claude.ai</strong>
+    <span>This site has no API key, so use the marking desk on claude.ai. It uses your Claude account and needs no setup.</span>
+    <a class="btn primary" style="justify-self:start;text-decoration:none" href="https://claude.ai/artifact/AJrghVX5nYcgjNu1N7VAyE">Open the marking desk</a>
+  </div>
+
   <div class="grid">
     <section class="panel" aria-labelledby="scanH">
       <h2 id="scanH">Scan a chit</h2>
@@ -484,6 +490,11 @@ const EXAMPLE_EV = {
   const heur = heuristicAI(EXAMPLE_EV.transcription);
   renderResult({ ev:EXAMPLE_EV, type:"substantive", forced:"auto", heur, mark:computeMark(EXAMPLE_EV,"substantive",heur), text:EXAMPLE_EV.transcription, override:null }, true);
 })();
+
+/* ---------- send to claude.ai when this site has no key ---------- */
+fetch("/api/mark").then(r => r.json()).then(j => {
+  if (j && j.ready === false){ $("#noKey").hidden = false; location.replace("https://claude.ai/artifact/AJrghVX5nYcgjNu1N7VAyE"); }
+}).catch(() => {});
 
 /* ---------- register ---------- */
 loadLocal(); renderRegister();
