@@ -494,8 +494,8 @@ function renderRegister(){
     return;
   }
   const sorted = [...entries].sort((a,b) => b.at - a.at);
-  log.innerHTML = `<tr><th>Time</th><th>From</th><th>To</th><th>Type</th><th class="num">Mark</th><th class="num">AI</th><th>Note</th><th></th></tr>` +
-    sorted.map(e => `<tr><td>${new Date(e.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</td><td>${esc(normName(e.from))}</td><td>${esc(e.to)}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}${e.overridden ? "*" : ""}</td><td class="num">${e.band === "likely" ? `<span class="chip bad">${e.ai}%</span>` : e.band === "possible" ? `<span class="chip warn">${e.ai}%</span>` : e.ai + "%"}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small ghost" data-del="${esc(e.id)}" type="button" aria-label="Remove this chit">Remove</button></td></tr>`).join("");
+  log.innerHTML = `<tr><th>From</th><th>To</th><th>Type</th><th class="num">Mark</th><th class="num">AI</th><th>Note</th><th></th></tr>` +
+    sorted.map(e => `<tr><td>${esc(normName(e.from))}</td><td>${esc(e.to)}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}${e.overridden ? "*" : ""}</td><td class="num">${e.band === "likely" ? `<span class="chip bad">${e.ai}%</span>` : e.band === "possible" ? `<span class="chip warn">${e.ai}%</span>` : e.ai + "%"}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small ghost" data-del="${esc(e.id)}" type="button" aria-label="Remove this chit">Remove</button></td></tr>`).join("");
   const by = {};
   for (const e of entries){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } }
   const rows = Object.entries(by).map(([k,t]) => ({k,...t,total:t.ns+t.ss})).sort((a,b) => b.total - a.total);
@@ -511,8 +511,8 @@ function renderRegister(){
 
 function csv(){
   const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const head = ["Time","From","To","Type","Mark","Calculated","Overridden","Summary","Excerpt"];
-  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [new Date(e.at).toLocaleString(), normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
+  const head = ["From","To","Type","Mark","Calculated","Overridden","Summary","Excerpt"];
+  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
   return [head, ...rows].map(r => r.map(q).join(",")).join("\n");
 }
 $("#copyCsv").onclick = async () => {
