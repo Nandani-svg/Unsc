@@ -1,0 +1,7 @@
+{
+  "name": "unsc-chit-marking-desk",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": { "@anthropic-ai/sdk": "^1.12.0" }
+}
