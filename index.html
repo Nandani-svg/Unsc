@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>UNSC Chit Marking Desk</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
 <style>
@@ -103,8 +107,12 @@ tr:last-child td{border-bottom:0}
 .rubric{font-size:13.5px;color:var(--muted)}
 .rubric summary{cursor:pointer;color:var(--fg);font-weight:600}
 .rubric table{min-width:0;font-size:13px;margin-top:8px}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <header>
     <span class="eyebrow">UNSC · Rapporteur</span>
@@ -142,6 +150,11 @@ tr:last-child td{border-bottom:0}
         <textarea id="typed" placeholder="From: Delegate of …&#10;To: Delegate of … / Executive Board&#10;Via: Executive Board&#10;…"></textarea>
       </div>
 
+      <div style="display:grid;gap:6px">
+        <label for="code" class="hint">Committee access code</label>
+        <input id="code" type="password" autocomplete="current-password" placeholder="Ask the person who set up this site" style="font:14px var(--body);padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)">
+      </div>
+
       <button class="primary mark-btn" id="markBtn" type="button">Mark this chit</button>
       <div class="status" id="status" role="status"></div>
 
@@ -171,7 +184,7 @@ tr:last-child td{border-bottom:0}
       <h2 id="regH">Marks register</h2>
       <div class="btnrow">
         <button class="small" id="copyCsv" type="button">Copy as CSV</button>
-        <button class="small" id="dlCsv" type="button" hidden>Download CSV</button>
+        <button class="small" id="dlCsv" type="button">Download CSV</button>
       </div>
     </div>
     <span class="store-note" id="storeNote">Connecting to your saved marks…</span>
@@ -235,58 +248,9 @@ function computeMark(ev, type, heur){
   return { final, raw, q, ai, claudeAI, band, part, steps };
 }
 
-const AGENDA = "Addressing the Expansion of Proxy Warfare Through State-Sponsored Non-State Armed Groups and Private Military Actors and Its Implications for International Peace and Security";
-
-function buildPrompt(typed, forcedType, hasImage){
-  return `You are assisting the Rapporteur of a Model United Nations Security Council (UNSC) committee in marking delegates' chits.
-
-AGENDA: "${AGENDA}"
-
-Background the Rapporteur expects delegates to draw on (use it to judge relevance and catch factual errors; a chit need not cite these):
-- Law: UN Charter Art. 2(4), 2(7), 51, Chapter VII; ILC Articles on State Responsibility (2001), esp. Art. 8 (conduct directed or controlled by a State); ICJ Nicaragua v. USA (1986, "effective control"); ICTY Tadić (1999, "overall control"); ICJ Bosnia Genocide (2007); Additional Protocol I Art. 47 (definition of mercenary); 1989 International Convention against the Recruitment, Use, Financing and Training of Mercenaries; OAU 1977 Convention for the Elimination of Mercenarism in Africa; Montreux Document (2008) on PMSCs; International Code of Conduct for Private Security Service Providers (ICoC, 2010) and ICoCA; UN Working Group on the use of mercenaries (est. 2005); Human Rights Council open-ended IGWG on a PMSC regulatory framework; UNSC Res. 1373 (2001), 2178 (2014), 2216 (2015, Yemen arms embargo), 2719 (2023, AU peace operations financing), arms embargoes on Libya (Res. 1970/1973, 2011) and others; Arms Trade Treaty (2013).
-- Cases: Wagner Group / Africa Corps (Libya, Syria, CAR, Mali, Sudan, Ukraine); Rapid Support Forces (Sudan) and foreign backers; Hezbollah, Houthis (Ansar Allah), Iraqi PMF and the "Axis of Resistance"; M23 in eastern DRC and the UN Group of Experts reports on Rwandan support; foreign-backed factions in Libya and Syria; historic Executive Outcomes and Sandline (Sierra Leone, Angola); Blackwater Nisour Square (2007); Turkish-backed Syrian National Army; cyber proxies; plausible deniability and attribution problems.
-
-MUN CHIT CONVENTIONS:
-- A chit is a short written note passed during committee. Expected parts: "From:" (e.g. Delegate of France), "To:" (another delegate, or the Executive Board / Chair), and usually "Via: Executive Board". A clear purpose or subject line helps.
-- Delegates must write in third person and diplomatic register ("The delegate of X would like to ask…"), never "I/me/you", no slang or personal remarks.
-- NORMAL chit: a brief question, point or request (to a delegate or the EB), usually a sentence or two. Logistics or blocs count as normal.
-- SUBSTANTIVE chit: a developed, agenda-based question, argument, rebuttal or proposal with reasoning, examples, law or data; usually to another delegate or the EB, longer and analytical.
-
-${hasImage ? "An image of the chit is attached. It may be handwritten. First transcribe it exactly as written (keep line breaks, keep spelling mistakes, write [illegible] for unreadable words)." : "The chit text was typed in by the Rapporteur:"}
-${typed ? `\n--- TYPED TEXT ---\n${typed}\n--- END ---\n` : ""}
-${forcedType === "auto" ? "Decide whether it is a normal or substantive chit." : `The Rapporteur has said this is a ${forcedType.toUpperCase()} chit; grade it against that standard and still report what you think it is.`}
-
-GRADE each criterion 0-10, strictly, as an experienced MUN Executive Board would (5 = acceptable, 8+ = genuinely impressive, most chits land 3-7):
-- relevance: how directly it engages this agenda (proxy warfare, state-sponsored NSAGs, PMCs/PMSCs, implications for peace and security).
-- substance: depth of reasoning, specificity, use of law/cases/data, quality of the question or argument. A trivial or vague chit scores low.
-- accuracy: are the facts, resolution numbers, treaties, dates and country positions correct? Any error lowers it; list each error in factual_issues. If the chit states no facts, judge plausibility (around 6).
-- format: From / To / Via EB / clear purpose present and correct, chit is concise and readable.
-- language: third person, diplomatic, respectful, grammatical.
-
-AI-WRITTEN CHECK: estimate the likelihood 0-100 that the wording was generated by an AI tool (ChatGPT etc.) and copied onto the chit, even if handwritten. Signals: polished essay prose unusual for a note written live in committee, stock AI phrases (delve, multifaceted, furthermore, it is imperative, underscores, landscape, robust framework, pivotal, foster, holistic, paramount, navigate the complexities, em-dashes), balanced triads, generic statements with no committee-specific reference, perfectly parallel structure, length far beyond what fits on a chit. Signals of a human: abbreviations, crossings-out, small errors, direct reference to something said in committee, uneven phrasing. Do not inflate this number for a merely well-written chit; give concrete signals for any score above 40.
-
-If the image is not a chit or is unreadable, set legible to false.
-
-Reply with ONLY this JSON object:
-{
- "legible": true,
- "transcription": "exact text of the chit",
- "detected_type": "normal" | "substantive",
- "type_reason": "one short sentence",
- "from": "sender or null", "to": "recipient or null", "via": "via line or null", "subject": "purpose in a few words",
- "format": {"has_from": true, "has_to": true, "has_via_eb": true, "has_clear_purpose": true, "third_person": true, "diplomatic": true, "concise": true},
- "scores": {"relevance": 0, "substance": 0, "accuracy": 0, "format": 0, "language": 0},
- "factual_issues": ["…"],
- "ai": {"likelihood": 0, "signals": ["…"]},
- "strengths": ["…"],
- "weaknesses": ["…"],
- "summary": "two sentences a Rapporteur can read aloud or note down"
-}`;
-}
-
 /* ---------- state ---------- */
-let imageBlob = null, sample = null, current = null, busy = null;
-let entries = [], store = { kind:"local", col:null };
+let imageBlob = null, current = null, busy = null;
+let entries = [];
 
 const statusEl = $("#status");
 const setStatus = (msg, err) => { statusEl.textContent = msg || ""; statusEl.classList.toggle("err", !!err); };
@@ -323,32 +287,42 @@ document.querySelectorAll('input[name="ctype"]').forEach(r => r.addEventListener
 
 /* ---------- marking ---------- */
 const ERR = {
-  not_granted:"Claude access was declined for this page, so it cannot mark chits. Allow it from the page's permissions menu.",
-  sampling_disabled:"Claude is not available on this account.",
-  images_unavailable:"This view cannot send photos to Claude. Type the chit text instead.",
-  image_rejected:"That photo could not be read. Retake it closer, in good light.",
-  rate_limited:"Too many chits at once, or your usage limit was reached. Wait a minute and try again.",
+  access_code:"Wrong or missing access code. Enter the committee access code above.",
+  no_key:"The site owner has not added the Anthropic API key in Vercel yet.",
+  bad_key:"The Anthropic API key in Vercel is invalid. The site owner needs to replace it.",
+  image_rejected:"That photo could not be used. Retake it as a normal phone photo.",
+  rate_limited:"Too many chits at once. Wait a minute and try again.",
   refused:"Claude would not mark this input. Check the image is a chit.",
   invalid_json:"The reply came back malformed. Press Mark this chit again.",
-  session_expired:"Your session expired. Sign in again and reload.",
   cancelled:"Marking stopped."
 };
+
+function blobToBase64(blob){
+  return new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = bad; r.readAsDataURL(blob); });
+}
+
+const codeIn = $("#code");
+try{ codeIn.value = localStorage.getItem("chitAccessCode") || ""; }catch{}
+codeIn.addEventListener("change", () => { try{ localStorage.setItem("chitAccessCode", codeIn.value); }catch{} });
 
 $("#markBtn").onclick = async () => {
   if (busy){ busy.abort(); return; }
   const typed = $("#typed").value.trim();
   if (!imageBlob && !typed){ setStatus("Scan or upload a chit, or type its text, first.", true); return; }
-  if (!sample){ setStatus("Claude is not connected in this view, so chits cannot be marked here. Open the page on claude.ai.", true); return; }
   const forced = chosenType();
-  const opts = { signal:(busy = new AbortController()).signal, cache:false };
-  if (imageBlob) opts.images = [imageBlob];
+  busy = new AbortController();
   $("#markBtn").textContent = "Stop";
   setStatus("");
   $("#result").innerHTML = `<div class="thinking"><div class="spin"></div><div>Reading the chit and checking it against the agenda…<br><span class="hint">This usually takes 15–40 seconds.</span></div></div>`;
   try{
-    const ev = await sample.json(buildPrompt(typed, forced, !!imageBlob), opts);
+    const payload = { typed, forcedType: forced };
+    if (imageBlob) payload.image = { mediaType: imageBlob.type || "image/jpeg", data: await blobToBase64(imageBlob) };
+    const r = await fetch("/api/mark", { method:"POST", headers:{ "Content-Type":"application/json", "X-Access-Code": codeIn.value }, body: JSON.stringify(payload), signal: busy.signal });
+    const out = await r.json().catch(() => ({ code:"upstream_error" }));
+    if (!r.ok) throw out;
+    const ev = out.ev;
     if (!ev || typeof ev !== "object") throw {code:"invalid_json"};
-    if (ev.legible === false){ $("#result").innerHTML = ""; renderEmpty("The chit could not be read. Retake the photo flat, in good light, or type the text."); return; }
+    if (ev.legible === false){ renderEmpty("The chit could not be read. Retake the photo flat, in good light, or type the text."); return; }
     const type = forced === "auto" ? (ev.detected_type === "substantive" ? "substantive" : "normal") : forced;
     const text = String(ev.transcription || typed || "");
     const heur = heuristicAI(text);
@@ -357,8 +331,8 @@ $("#markBtn").onclick = async () => {
     renderResult(current);
     await saveCurrent();
   }catch(e){
-    const code = e && e.code;
-    renderEmpty(ERR[code] || "Marking failed because of a connection problem. Press Mark this chit to try again.", code !== "cancelled");
+    const code = e && (e.name === "AbortError" ? "cancelled" : e.code);
+    renderEmpty(ERR[code] || (e && e.message) || "Marking failed because of a connection problem. Press Mark this chit to try again.", code !== "cancelled");
   }finally{
     busy = null; $("#markBtn").textContent = "Mark this chit";
   }
@@ -446,15 +420,13 @@ async function saveCurrent(){
   if (!current) return;
   const e = toEntry(current);
   try{
-    if (store.kind === "db"){ await store.col.doc(e.id).set(e); }
-    else { const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.unshift(e); saveLocal(); renderRegister(); }
+    const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.unshift(e); saveLocal(); renderRegister();
     setStatus(`Saved to the register: ${e.from}, ${fmt(e.score,e.type)}.`);
   }catch{ setStatus("Marked, but saving to the register failed. Note the score down.", true); }
 }
 async function removeEntry(id){
   try{
-    if (store.kind === "db") await store.col.doc(id).delete();
-    else { entries = entries.filter(x => x.id !== id); saveLocal(); renderRegister(); }
+    entries = entries.filter(x => x.id !== id); saveLocal(); renderRegister();
   }catch{ $("#regStatus").textContent = "Could not remove that row."; }
 }
 function saveLocal(){ try{ localStorage.setItem("chitRegister", JSON.stringify(entries)); }catch{} }
@@ -513,42 +485,16 @@ const EXAMPLE_EV = {
   renderResult({ ev:EXAMPLE_EV, type:"substantive", forced:"auto", heur, mark:computeMark(EXAMPLE_EV,"substantive",heur), text:EXAMPLE_EV.transcription, override:null }, true);
 })();
 
-/* ---------- capabilities ---------- */
+/* ---------- register ---------- */
 loadLocal(); renderRegister();
-(async () => {
-  const cl = window.claude;
-  if (!cl || !cl.use){ setStatus("Open this page on claude.ai to mark chits with Claude.", true); $("#storeNote").textContent = "Saved in this browser only."; return; }
-  const [s, db, user, dl] = await Promise.all([cl.use("sample"), cl.use("db"), cl.use("user"), cl.use("downloads")]);
-  sample = s;
-  if (!sample) setStatus("Claude is not available in this view, so chits cannot be marked here.", true);
-  else {
-    const lim = await sample.limits().catch(() => null);
-    if (!lim || !lim.images){ $("#drop").hidden = true; $("#typed").placeholder = "Photos cannot be sent from this view. Type the chit text here."; }
-  }
-  if (dl){ $("#dlCsv").hidden = false; $("#dlCsv").onclick = async () => {
-    if (!entries.length){ $("#regStatus").textContent = "Nothing to download yet."; return; }
-    try{ await dl.save({ filename:"unsc-chit-marks.csv", data:csv() }); $("#regStatus").textContent = "Saved."; }catch(e){ if (e?.code !== "cancelled") $("#regStatus").textContent = "Download did not complete."; }
-  }; }
-  const uid = user ? await user.id() : null;
-  if (db && uid){
-    const local = entries.slice();
-    store = { kind:"db", col: db.collection("data/users/" + uid + "/chits") };
-    let first = true;
-    const timer = setTimeout(() => { if (first) $("#storeNote").textContent = "Still connecting to your saved marks…"; }, 10000);
-    store.col.orderBy("at","desc").onSnapshot(snap => {
-      clearTimeout(timer);
-      entries = snap.docs.map(d => d.data());
-      if (first){ first = false;
-        const have = new Set(entries.map(e => e.id));
-        for (const e of local) if (!have.has(e.id)) store.col.doc(e.id).set(e).catch(() => {});
-        try{ localStorage.removeItem("chitRegister"); }catch{}
-      }
-      $("#storeNote").textContent = "Saved to your account. Only you can see this register, on any device.";
-      renderRegister();
-    }, () => { clearTimeout(timer); $("#storeNote").textContent = "Could not load saved marks. New marks are still being saved."; });
-  } else {
-    $("#storeNote").textContent = "Saved in this browser only. Copy the CSV before closing.";
-  }
-})();
+$("#storeNote").textContent = "Saved in this browser on this device. Download the CSV regularly as a backup.";
+$("#dlCsv").onclick = () => {
+  if (!entries.length){ $("#regStatus").textContent = "Nothing to download yet."; return; }
+  const url = URL.createObjectURL(new Blob([csv()], { type:"text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = "unsc-chit-marks.csv"; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+};
 })();
 </script>
+</body>
+</html>
