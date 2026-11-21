@@ -1,0 +1,675 @@
+<!doctype html><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><title>UNSC Chit Marking Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+/* Layout: a rapporteur's desk. Scan column on the left, verdict sheet on the right, the marks register below. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#e8ecf2; --line:#d3d9e3;
+  --fg:#16202e; --muted:#5a6678; --accent:#1b5fa6; --accent-ink:#ffffff; --accent-soft:#dde9f6;
+  --good:#1d7a4a; --good-soft:#dcf1e5; --warn:#a86400; --warn-soft:#fbecd2; --bad:#b3261e; --bad-soft:#f8dedb;
+  --display:"IBM Plex Serif",Georgia,serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141c; --surface:#171e29; --sunk:#1f2836; --line:#2d394b;
+  --fg:#e5eaf2; --muted:#9aa6b8; --accent:#6aa8ec; --accent-ink:#0b1320; --accent-soft:#1c3150;
+  --good:#5bc78d; --good-soft:#163527; --warn:#e4a64a; --warn-soft:#3a2b12; --bad:#f08a80; --bad-soft:#40201d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141c; --surface:#171e29; --sunk:#1f2836; --line:#2d394b;
+  --fg:#e5eaf2; --muted:#9aa6b8; --accent:#6aa8ec; --accent-ink:#0b1320; --accent-soft:#1c3150;
+  --good:#5bc78d; --good-soft:#163527; --warn:#e4a64a; --warn-soft:#3a2b12; --bad:#f08a80; --bad-soft:#40201d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+header{display:grid;gap:6px;border-bottom:1px solid var(--line);padding-bottom:16px}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(24px,4vw,32px)/1.15 var(--display);margin:0;text-wrap:balance}
+.agenda{color:var(--muted);max-width:70ch;margin:0}
+h2{font:600 13px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h3{font:600 15px/1.3 var(--body);margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--sunk);border-radius:8px;padding:3px;gap:3px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:8px 4px;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;color:var(--muted)}
+.seg input:checked+label{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:1px}
+.range-note{font:12px/1.4 var(--mono);color:var(--muted)}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;justify-items:center;text-align:center;background:var(--sunk)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px;width:100%}
+.thumb{position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.thumb img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.thumb .x{position:absolute;top:4px;right:4px;width:26px;height:26px;padding:0;justify-content:center;border-radius:50%;font-size:15px;line-height:1;background:var(--surface);opacity:.92}
+.thumb .n{position:absolute;left:4px;bottom:4px;font:600 11px/1 var(--mono);padding:4px 6px;border-radius:4px;background:var(--surface);color:var(--fg)}
+.onechit{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.onechit input{width:18px;height:18px;accent-color:var(--accent)}
+.batch{display:grid;gap:6px}
+.brow{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.brow img{width:44px;height:56px;object-fit:cover;border-radius:4px}
+.brow .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .mk{font:600 16px/1 var(--mono);font-variant-numeric:tabular-nums}
+.brow.sel{border-color:var(--accent);background:var(--accent-soft)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+button,.btn{font:600 14px/1 var(--body);border-radius:8px;padding:11px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+button:hover,.btn:hover{border-color:var(--accent)}
+button:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary,.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.small{padding:7px 10px;font-size:13px}
+button.ghost{background:transparent}
+.file-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+textarea{width:100%;min-height:90px;resize:vertical;font:14px/1.45 var(--body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+.mark-btn{width:100%;justify-content:center;padding:14px;font-size:15px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+.status.err{color:var(--bad)}
+/* verdict */
+.verdict{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+@media (max-width:520px){.verdict{grid-template-columns:minmax(0,1fr)}}
+.scorebox{background:var(--sunk);border-radius:10px;padding:14px 18px;text-align:center;min-width:150px}
+.score{font:600 52px/1 var(--mono);font-variant-numeric:tabular-nums}
+.outof{font:13px/1.4 var(--mono);color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 12px/1 var(--mono);padding:6px 8px;border-radius:999px;background:var(--sunk);color:var(--fg);letter-spacing:.02em}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.acc{background:var(--accent-soft);color:var(--accent)}
+.meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px}
+.meta dt{color:var(--muted)} .meta dd{margin:0;overflow-wrap:anywhere}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:640px){.cols{grid-template-columns:minmax(0,1fr)}}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:110px minmax(0,1fr) 40px;gap:10px;align-items:center;font-size:13px}
+.track{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.fill{height:100%;background:var(--accent);border-radius:4px}
+.bar .v{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.aimeter{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--good) 0 50%,var(--warn) 50% 75%,var(--bad) 75% 100%);position:relative;opacity:.9}
+.aimeter i{position:absolute;top:-4px;width:3px;height:18px;background:var(--fg);border-radius:2px;transform:translateX(-50%)}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:14px}
+.checks li{display:flex;gap:8px;align-items:baseline}
+.checks .ok{color:var(--good);font-weight:700} .checks .no{color:var(--bad);font-weight:700}
+ul.plain{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.transcript{font:14px/1.55 var(--mono);background:var(--sunk);border-radius:8px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:280px;overflow:auto}
+mark{background:var(--warn-soft);color:var(--warn);border-radius:3px;padding:0 2px}
+.calc{font:12.5px/1.6 var(--mono);color:var(--muted);background:var(--sunk);border-radius:8px;padding:10px 12px;overflow-x:auto}
+.override{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:14px}
+.override input{width:90px;font:600 15px/1 var(--mono);padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+.example-tag{font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:5px 8px;border-radius:4px;justify-self:start}
+.thinking{display:grid;gap:10px;justify-items:center;padding:40px 10px;color:var(--muted);text-align:center}
+.spin{width:28px;height:28px;border:3px solid var(--sunk);border-top-color:var(--accent);border-radius:50%;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+/* register */
+.reghead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.store-note{font-size:12.5px;color:var(--muted)}
+.rubric{font-size:13.5px;color:var(--muted)}
+.rubric summary{cursor:pointer;color:var(--fg);font-weight:600}
+.rubric table{min-width:0;font-size:13px;margin-top:8px}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">UNSC · Rapporteur</span>
+    <h1>UNSC Chit Marking Desk</h1>
+    <p class="agenda">Agenda: Addressing the Expansion of Proxy Warfare Through State-Sponsored Non-State Armed Groups and Private Military Actors and Its Implications for International Peace and Security.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="scanH">
+      <h2 id="scanH">Scan a chit</h2>
+
+      <div>
+        <div class="seg" role="radiogroup" aria-label="Chit type">
+          <input type="radio" name="ctype" id="t-auto" value="auto" checked><label for="t-auto">Auto-detect</label>
+          <input type="radio" name="ctype" id="t-normal" value="normal"><label for="t-normal">Normal</label>
+          <input type="radio" name="ctype" id="t-sub" value="substantive"><label for="t-sub">Substantive</label>
+        </div>
+        <p class="range-note" id="rangeNote" style="margin:8px 0 0">Normal 0.1–1.0 · Substantive 1–5</p>
+      </div>
+
+      <div class="drop" id="drop">
+        <div class="thumbs" id="thumbs" hidden></div>
+        <p class="hint" id="dropHint">Take photos of chits, or upload several at once. Each photo is marked as its own chit.</p>
+        <div class="btnrow">
+          <label class="btn primary" for="camIn" id="camLbl">Scan with camera</label>
+          <label class="btn" for="fileIn">Upload photos</label>
+          <button type="button" class="ghost small" id="clearImg" hidden>Clear all</button>
+        </div>
+        <input class="file-hidden" type="file" id="camIn" accept="image/*" capture="environment">
+        <input class="file-hidden" type="file" id="fileIn" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+        <label class="onechit" id="oneChitRow" hidden><input type="checkbox" id="oneChit"> These photos are pages of one chit</label>
+      </div>
+
+      <div style="display:grid;gap:6px">
+        <label for="typed" class="hint">Or type the chit text (use this if the photo is unclear)</label>
+        <textarea id="typed" placeholder="From: Delegate of …&#10;To: Delegate of … / Executive Board&#10;Via: Executive Board&#10;…"></textarea>
+      </div>
+
+      <button class="primary mark-btn" id="markBtn" type="button">Mark this chit</button>
+      <div class="status" id="status" role="status"></div>
+
+      <details class="rubric">
+        <summary>How marks are worked out</summary>
+        <p>Claude reads the chit and grades five criteria out of 10, and estimates how likely the wording is AI-written. A stock-phrase scan can raise that estimate but never lower it. The page combines them with fixed weights, scales into the official range and applies the AI rule. Claude never sets the final number directly.</p>
+        <table>
+          <tr><th>Criterion</th><th class="num">Normal</th><th class="num">Subst.</th></tr>
+          <tr><td>Relevance to agenda</td><td class="num">30%</td><td class="num">25%</td></tr>
+          <tr><td>Substance / depth</td><td class="num">20%</td><td class="num">30%</td></tr>
+          <tr><td>Factual accuracy</td><td class="num">15%</td><td class="num">20%</td></tr>
+          <tr><td>Chit format</td><td class="num">25%</td><td class="num">15%</td></tr>
+          <tr><td>Diplomatic language</td><td class="num">10%</td><td class="num">10%</td></tr>
+        </table>
+        <p><b>AI rule:</b> AI likelihood 75% or more gets the minimum mark (0.1 / 1). 50–74% is capped at the average (0.5 / 3). Below 50% no penalty.<br><b>Other gates:</b> no "From" line ×0.7; off-topic (relevance ≤ 2) capped near the minimum. Normal marks round to 0.1, substantive to 0.5.</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="resH" id="resultPanel">
+      <h2 id="resH">Verdict</h2>
+      <div class="batch" id="batch" hidden></div>
+      <div id="result"></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="regH">
+    <div class="reghead">
+      <h2 id="regH">Marks register</h2>
+      <div class="btnrow">
+        <button class="small" id="copyCsv" type="button">Copy as CSV</button>
+        <button class="small" id="dlCsv" type="button" hidden>Download CSV</button>
+      </div>
+    </div>
+    <span class="store-note" id="storeNote">Connecting to your saved marks…</span>
+    <h3>Totals by delegation</h3>
+    <div class="tablewrap"><table id="tally"></table></div>
+    <h3>Every chit</h3>
+    <div class="tablewrap"><table id="log"></table></div>
+    <div class="status" id="regStatus" role="status"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = (s) => document.querySelector(s);
+const RANGE = { normal:{min:0.1,max:1,mid:0.5,step:0.1}, substantive:{min:1,max:5,mid:3,step:0.5} };
+const WEIGHTS = {
+  normal:{relevance:.30,substance:.20,accuracy:.15,format:.25,language:.10},
+  substantive:{relevance:.25,substance:.30,accuracy:.20,format:.15,language:.10}
+};
+const LABELS = {relevance:"Relevance",substance:"Substance",accuracy:"Accuracy",format:"Format",language:"Diplomatic tone"};
+
+/* Phrases that show up far more in AI-written text than in a delegate's hand-written chit. */
+const AI_MARKERS = ["delve","delves","delving","multifaceted","multi-faceted","furthermore","moreover","in conclusion","it is imperative","imperative that","underscore","underscores","underscoring","landscape","tapestry","navigate","navigating","robust","comprehensive framework","pivotal","crucial role","vital role","plays a crucial","plays a vital","foster","fostering","holistic","nuanced","paramount","leverage","leveraging","in today's","ever-evolving","evolving landscape","it is important to note","it is worth noting","a testament","realm","intricate","seamless","synergy","stakeholders","ultimately","additionally","in light of","shed light","overarching","myriad","notwithstanding the aforementioned","not only","but also","in essence","complexities","concerted efforts","heightened","bolster","bolstering","safeguard","safeguarding","mitigate","mitigating"];
+const RX = new RegExp("\\b(" + AI_MARKERS.map(m => m.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/ /g,"\\s+")).join("|") + ")\\b","gi");
+
+function heuristicAI(text){
+  const words = (text.match(/\b[\w'-]+\b/g) || []).length || 1;
+  const hits = [...text.matchAll(RX)].map(m => m[0].toLowerCase());
+  const dashes = (text.match(/—/g) || []).length;
+  const n = hits.length;
+  let s = n*14 + (n/words*100)*8 + dashes*8;
+  return { score: Math.max(0, Math.min(100, Math.round(s))), hits:[...new Set(hits)], words };
+}
+
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const roundTo = (v, step) => Math.round(v/step)*step;
+const fmt = (v, type) => type === "normal" ? v.toFixed(1) : (Math.round(v*10)/10).toString();
+
+/* The marking rule. Pure: same inputs, same mark. */
+function computeMark(ev, type, heur){
+  const R = RANGE[type], W = WEIGHTS[type], sc = ev.scores || {};
+  const part = {};
+  let q = 0;
+  for (const k in W){ const s = clamp(Number(sc[k]) || 0, 0, 10); part[k] = s; q += W[k]*s/10; }
+  const steps = [`weighted quality = ${q.toFixed(3)}`];
+  const f = ev.format || {};
+  if (f.has_from === false){ q *= 0.7; steps.push(`no "From" line ×0.7 → ${q.toFixed(3)}`); }
+  if (part.relevance <= 2){ q = Math.min(q, 0.1); steps.push(`off-topic cap → ${q.toFixed(3)}`); }
+  let raw = R.min + q*(R.max - R.min);
+  steps.push(`scaled to ${R.min}–${R.max} → ${raw.toFixed(2)}`);
+  const claudeAI = clamp(Number(ev.ai && ev.ai.likelihood) || 0, 0, 100);
+  const blend = 0.7*claudeAI + 0.3*heur.score;
+  const ai = Math.round(clamp(Math.max(claudeAI, blend), 0, 100));
+  steps.push(`AI likelihood = higher of reading (${claudeAI}) and 0.7×reading + 0.3×phrase scan (${heur.score}) = ${ai}%`);
+  let band = "clear", final = raw;
+  if (ai >= 75){ band = "likely"; final = R.min; steps.push(`AI ≥ 75% → minimum ${R.min}`); }
+  else if (ai >= 50){ band = "possible"; if (raw > R.mid){ final = R.mid; } steps.push(`AI 50–74% → capped at average ${R.mid}`); }
+  final = clamp(roundTo(final, R.step), R.min, R.max);
+  final = Math.round(final*10)/10;
+  steps.push(`rounded to ${R.step} → ${fmt(final,type)}`);
+  return { final, raw, q, ai, claudeAI, band, part, steps };
+}
+
+const AGENDA = "Addressing the Expansion of Proxy Warfare Through State-Sponsored Non-State Armed Groups and Private Military Actors and Its Implications for International Peace and Security";
+
+function buildPrompt(typed, forcedType, hasImage){
+  return `You are assisting the Rapporteur of a Model United Nations Security Council (UNSC) committee in marking delegates' chits.
+
+AGENDA: "${AGENDA}"
+
+Background the Rapporteur expects delegates to draw on (use it to judge relevance and catch factual errors; a chit need not cite these):
+- Law: UN Charter Art. 2(4), 2(7), 51, Chapter VII; ILC Articles on State Responsibility (2001), esp. Art. 8 (conduct directed or controlled by a State); ICJ Nicaragua v. USA (1986, "effective control"); ICTY Tadić (1999, "overall control"); ICJ Bosnia Genocide (2007); Additional Protocol I Art. 47 (definition of mercenary); 1989 International Convention against the Recruitment, Use, Financing and Training of Mercenaries; OAU 1977 Convention for the Elimination of Mercenarism in Africa; Montreux Document (2008) on PMSCs; International Code of Conduct for Private Security Service Providers (ICoC, 2010) and ICoCA; UN Working Group on the use of mercenaries (est. 2005); Human Rights Council open-ended IGWG on a PMSC regulatory framework; UNSC Res. 1373 (2001), 2178 (2014), 2216 (2015, Yemen arms embargo), 2719 (2023, AU peace operations financing), arms embargoes on Libya (Res. 1970/1973, 2011) and others; Arms Trade Treaty (2013).
+- Cases: Wagner Group / Africa Corps (Libya, Syria, CAR, Mali, Sudan, Ukraine); Rapid Support Forces (Sudan) and foreign backers; Hezbollah, Houthis (Ansar Allah), Iraqi PMF and the "Axis of Resistance"; M23 in eastern DRC and the UN Group of Experts reports on Rwandan support; foreign-backed factions in Libya and Syria; historic Executive Outcomes and Sandline (Sierra Leone, Angola); Blackwater Nisour Square (2007); Turkish-backed Syrian National Army; cyber proxies; plausible deniability and attribution problems.
+
+MUN CHIT CONVENTIONS:
+- A chit is a short written note passed during committee. Expected parts: "From:" (e.g. Delegate of France), "To:" (another delegate, or the Executive Board / Chair), and usually "Via: Executive Board". A clear purpose or subject line helps.
+- Delegates must write in third person and diplomatic register ("The delegate of X would like to ask…"), never "I/me/you", no slang or personal remarks.
+- NORMAL chit: a brief question, point or request (to a delegate or the EB), usually a sentence or two. Logistics or blocs count as normal.
+- SUBSTANTIVE chit: a developed, agenda-based question, argument, rebuttal or proposal with reasoning, examples, law or data; usually to another delegate or the EB, longer and analytical.
+
+${hasImage ? "An image of the chit is attached. It may be handwritten. First transcribe it exactly as written (keep line breaks, keep spelling mistakes, write [illegible] for unreadable words)." : "The chit text was typed in by the Rapporteur:"}
+${typed ? `\n--- TYPED TEXT ---\n${typed}\n--- END ---\n` : ""}
+${forcedType === "auto" ? "Decide whether it is a normal or substantive chit." : `The Rapporteur has said this is a ${forcedType.toUpperCase()} chit; grade it against that standard and still report what you think it is.`}
+
+GRADE each criterion 0-10, strictly, as an experienced MUN Executive Board would (5 = acceptable, 8+ = genuinely impressive, most chits land 3-7):
+- relevance: how directly it engages this agenda (proxy warfare, state-sponsored NSAGs, PMCs/PMSCs, implications for peace and security).
+- substance: depth of reasoning, specificity, use of law/cases/data, quality of the question or argument. A trivial or vague chit scores low.
+- accuracy: are the facts, resolution numbers, treaties, dates and country positions correct? Any error lowers it; list each error in factual_issues. If the chit states no facts, judge plausibility (around 6).
+- format: From / To / Via EB / clear purpose present and correct, chit is concise and readable.
+- language: third person, diplomatic, respectful, grammatical.
+
+AI-WRITTEN CHECK: estimate the likelihood 0-100 that the wording was generated by an AI tool (ChatGPT etc.) and copied onto the chit, even if handwritten. Signals: polished essay prose unusual for a note written live in committee, stock AI phrases (delve, multifaceted, furthermore, it is imperative, underscores, landscape, robust framework, pivotal, foster, holistic, paramount, navigate the complexities, em-dashes), balanced triads, generic statements with no committee-specific reference, perfectly parallel structure, length far beyond what fits on a chit. Signals of a human: abbreviations, crossings-out, small errors, direct reference to something said in committee, uneven phrasing. Do not inflate this number for a merely well-written chit; give concrete signals for any score above 40.
+
+If the image is not a chit or is unreadable, set legible to false.
+
+Reply with ONLY this JSON object:
+{
+ "legible": true,
+ "transcription": "exact text of the chit",
+ "detected_type": "normal" | "substantive",
+ "type_reason": "one short sentence",
+ "from": "the sender's country name only, e.g. \"France\" (no \"Delegate of\", no notes), or null", "to": "recipient or null", "via": "via line or null", "subject": "purpose in a few words",
+ "format": {"has_from": true, "has_to": true, "has_via_eb": true, "has_clear_purpose": true, "third_person": true, "diplomatic": true, "concise": true},
+ "scores": {"relevance": 0, "substance": 0, "accuracy": 0, "format": 0, "language": 0},
+ "factual_issues": ["…"],
+ "ai": {"likelihood": 0, "signals": ["…"]},
+ "strengths": ["…"],
+ "weaknesses": ["…"],
+ "summary": "two sentences a Rapporteur can read aloud or note down"
+}`;
+}
+
+/* ---------- state ---------- */
+let photos = [], sample = null, current = null, busy = null, maxImgs = 5, batchRows = [];
+let entries = [], store = { kind:"local", col:null };
+
+const statusEl = $("#status");
+const setStatus = (msg, err) => { statusEl.textContent = msg || ""; statusEl.classList.toggle("err", !!err); };
+const chosenType = () => document.querySelector('input[name="ctype"]:checked').value;
+
+/* ---------- image intake ---------- */
+async function shrink(file){
+  try{
+    const bmp = await createImageBitmap(file);
+    const max = 1800, s = Math.min(1, max/Math.max(bmp.width,bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r => c.toBlob(b => r(b || file), "image/jpeg", 0.9));
+  }catch{ return file; }
+}
+let photoSeq = 0;
+async function takeImages(fileList){
+  const files = [...(fileList || [])].filter(f => f && f.type && f.type.startsWith("image/"));
+  if (!files.length){ setStatus("That file is not an image. Use JPG, PNG or WebP photos.", true); return; }
+  for (const f of files){ const blob = await shrink(f); photos.push({ id: ++photoSeq, blob, url: URL.createObjectURL(blob) }); }
+  renderThumbs();
+  setStatus(photos.length === 1 ? "Photo ready. Add more, or press Mark." : `${photos.length} photos ready. Add more, or press Mark.`);
+}
+function renderThumbs(){
+  const t = $("#thumbs");
+  t.innerHTML = photos.map((p,i) => `<div class="thumb"><img src="${p.url}" alt="Chit photo ${i+1}"><span class="n">${i+1}</span><button type="button" class="x" data-rm="${p.id}" aria-label="Remove photo ${i+1}">×</button></div>`).join("");
+  t.hidden = !photos.length;
+  $("#dropHint").hidden = !!photos.length;
+  $("#clearImg").hidden = !photos.length;
+  $("#camLbl").textContent = photos.length ? "Scan another" : "Scan with camera";
+  $("#oneChitRow").hidden = photos.length < 2;
+  t.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
+    const i = photos.findIndex(p => p.id === Number(b.dataset.rm));
+    if (i >= 0){ URL.revokeObjectURL(photos[i].url); photos.splice(i,1); }
+    renderThumbs();
+  });
+  updateMarkLabel();
+}
+function separateMode(){ return photos.length > 1 && !$("#oneChit").checked; }
+function updateMarkLabel(){ if (!busy) $("#markBtn").textContent = separateMode() ? `Mark ${photos.length} chits` : "Mark this chit"; }
+$("#oneChit").addEventListener("change", updateMarkLabel);
+for (const id of ["#camIn","#fileIn"]) $(id).addEventListener("change", e => { takeImages(e.target.files); e.target.value = ""; });
+$("#clearImg").onclick = () => { photos.forEach(p => URL.revokeObjectURL(p.url)); photos = []; $("#oneChit").checked = false; renderThumbs(); setStatus(""); };
+const drop = $("#drop");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); takeImages(e.dataTransfer.files); });
+document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/")); if (f.length) takeImages(f); });
+document.querySelectorAll('input[name="ctype"]').forEach(r => r.addEventListener("change", () => {
+  const t = chosenType();
+  $("#rangeNote").textContent = t === "normal" ? "Normal chit: 0.1 minimum, 1.0 maximum" : t === "substantive" ? "Substantive chit: 1 minimum, 5 maximum" : "Normal 0.1–1.0 · Substantive 1–5";
+}));
+
+/* ---------- marking ---------- */
+const ERR = {
+  not_granted:"Claude access was declined for this page, so it cannot mark chits. Allow it from the page's permissions menu.",
+  sampling_disabled:"Claude is not available on this account.",
+  images_unavailable:"This view cannot send photos to Claude. Type the chit text instead.",
+  image_rejected:"That photo could not be read. Retake it closer, in good light.",
+  rate_limited:"Too many chits at once, or your usage limit was reached. Wait a minute and try again.",
+  refused:"Claude would not mark this input. Check the image is a chit.",
+  invalid_json:"The reply came back malformed. Press Mark this chit again.",
+  session_expired:"Your session expired. Sign in again and reload.",
+  cancelled:"Marking stopped."
+};
+
+const STOP_ALL = new Set(["not_granted","sampling_disabled","images_unavailable","rate_limited","session_expired","cancelled","not_declared","capability_disabled"]);
+const newId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* Mark one chit (one or more images of it, or typed text). Returns the chit, or null if unreadable. */
+async function markOne(images, typed, forced, signal){
+  const opts = { signal, cache:false };
+  if (images.length) opts.images = images;
+  let prompt = buildPrompt(typed, forced, images.length > 0);
+  if (images.length > 1) prompt = `There are ${images.length} images: they are pages or sides of the SAME single chit, in order. Transcribe them together as one chit.\n\n` + prompt;
+  const ev = await sample.json(prompt, opts);
+  if (!ev || typeof ev !== "object") throw {code:"invalid_json"};
+  if (ev.legible === false) return null;
+  const type = forced === "auto" ? (ev.detected_type === "substantive" ? "substantive" : "normal") : forced;
+  const text = String(ev.transcription || typed || "");
+  const heur = heuristicAI(text);
+  return { id:newId(), at:Date.now(), type, forced, ev, heur, mark:computeMark(ev, type, heur), text, override:null };
+}
+
+function renderBatch(){
+  const box = $("#batch");
+  box.hidden = !batchRows.length;
+  const done = batchRows.filter(r => r.state === "done").length;
+  box.innerHTML = `<div class="range-note">${done} of ${batchRows.length} marked${batchRows.some(r => r.state === "queued" || r.state === "marking") ? " · keep this page open" : ""}</div>` +
+    batchRows.map((r,i) => {
+      const c = r.chit;
+      const right = r.state === "done" ? `<span class="mk">${fmt(c.override ?? c.mark.final, c.type)}</span>` :
+        r.state === "marking" ? `<span class="spin" style="width:18px;height:18px;border-width:2px"></span>` :
+        r.state === "failed" ? `<span class="chip bad">Failed</span>` : r.state === "unreadable" ? `<span class="chip warn">Unreadable</span>` : `<span class="chip">Waiting</span>`;
+      const who = c ? `${esc(normName(c.ev.from))} · ${c.type === "normal" ? "Normal" : "Substantive"}${c.mark.band !== "clear" ? ` · AI ${c.mark.ai}%` : ""}` : esc(r.note || `Chit ${i+1}`);
+      return `<div class="brow${c && c === current ? " sel" : ""}"><img src="${r.url}" alt=""><span class="who">${who}</span>${right}${c ? `<button class="small" type="button" data-view="${i}">View</button>` : "<span></span>"}</div>`;
+    }).join("");
+  box.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { current = batchRows[Number(b.dataset.view)].chit; renderResult(current); renderBatch(); });
+}
+
+$("#markBtn").onclick = async () => {
+  if (busy){ busy.abort(); return; }
+  const typed = $("#typed").value.trim();
+  if (!photos.length && !typed){ setStatus("Scan or upload a chit, or type its text, first.", true); return; }
+  if (!sample){ setStatus("Claude is not connected in this view, so chits cannot be marked here. Open the page on claude.ai.", true); return; }
+  const forced = chosenType();
+  busy = new AbortController(); const signal = busy.signal;
+  $("#markBtn").textContent = "Stop";
+  setStatus("");
+  try{
+    if (!separateMode()){
+      batchRows = []; renderBatch();
+      const imgs = photos.slice(0, maxImgs).map(p => p.blob);
+      $("#result").innerHTML = `<div class="thinking"><div class="spin"></div><div>Reading the chit and checking it against the agenda…<br><span class="hint">This usually takes 15–40 seconds.</span></div></div>`;
+      const c = await markOne(imgs, typed, forced, signal);
+      if (!c){ renderEmpty("The chit could not be read. Retake the photo flat, in good light, or type the text."); return; }
+      current = c; renderResult(c); await saveEntry(c);
+      photos.forEach(ph => URL.revokeObjectURL(ph.url)); photos = []; $("#oneChit").checked = false; renderThumbs(); $("#typed").value = "";
+      return;
+    }
+    // Several photos, each its own chit: two at a time.
+    if (typed) setStatus("Typed text is not used when photos are marked as separate chits.");
+    batchRows = photos.map(p => ({ photo:p, url:p.url, state:"queued", chit:null }));
+    current = null; renderBatch();
+    $("#result").innerHTML = "";
+    let next = 0, fatal = null;
+    const worker = async () => {
+      while (!fatal && !signal.aborted && next < batchRows.length){
+        const r = batchRows[next++];
+        r.state = "marking"; renderBatch();
+        try{
+          const c = await markOne([r.photo.blob], "", forced, signal);
+          if (!c){ r.state = "unreadable"; r.note = "Could not read this photo"; }
+          else { r.chit = c; r.state = "done"; await saveEntry(c); if (!current){ current = c; renderResult(c); } }
+        }catch(e){
+          const code = e && e.code;
+          if (STOP_ALL.has(code)){ fatal = code; r.state = code === "cancelled" ? "queued" : "failed"; }
+          else { r.state = "failed"; r.note = ERR[code] || "Could not mark this photo"; }
+        }
+        renderBatch();
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    const ok = batchRows.filter(r => r.state === "done").length;
+    // Keep only photos that still need marking in the tray.
+    const keep = new Set(batchRows.filter(r => r.state !== "done").map(r => r.photo.id));
+    photos = photos.filter(p => keep.has(p.id));
+    renderThumbs();
+    if (fatal) setStatus(`${ok} marked. ${ERR[fatal] || "Stopped."}${photos.length ? " Unmarked photos are still in the tray." : ""}`, fatal !== "cancelled");
+    else setStatus(`${ok} of ${batchRows.length} chits marked and saved.${photos.length ? " Photos that failed are still in the tray: press Mark to try them again." : ""}`, ok < batchRows.length);
+    if (!current) renderEmpty("No chit could be marked. Retake the photos flat, in good light.", true);
+  }catch(e){
+    const code = e && e.code;
+    renderEmpty(ERR[code] || "Marking failed because of a connection problem. Press Mark to try again.", code !== "cancelled");
+  }finally{
+    busy = null; updateMarkLabel();
+  }
+};
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function highlight(text){ return esc(text).replace(RX, m => `<mark>${m}</mark>`).replace(/—/g, "<mark>—</mark>"); }
+const li = (arr) => (arr && arr.length) ? `<ul class="plain">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="hint">None noted.</p>`;
+
+function renderEmpty(msg, isErr){
+  $("#result").innerHTML = `<div class="thinking"><div style="${isErr ? "color:var(--bad)" : ""}">${esc(msg)}</div></div>`;
+}
+
+function renderResult(c, isExample){
+  const { ev, mark, type, heur } = c, R = RANGE[type], f = ev.format || {};
+  const shown = c.override ?? mark.final;
+  const aiChip = mark.band === "likely" ? `<span class="chip bad">AI likely · ${mark.ai}%</span>` : mark.band === "possible" ? `<span class="chip warn">AI possible · ${mark.ai}%</span>` : `<span class="chip good">Human-written · AI ${mark.ai}%</span>`;
+  const typeChip = `<span class="chip acc">${type === "normal" ? "Normal chit" : "Substantive chit"}${c.forced === "auto" ? " (auto)" : ""}</span>`;
+  const checks = [["From line", f.has_from],["To line", f.has_to],["Via Executive Board", f.has_via_eb],["Clear purpose", f.has_clear_purpose],["Third person", f.third_person],["Diplomatic tone", f.diplomatic],["Concise", f.concise]];
+  $("#result").innerHTML = `
+    ${isExample ? `<span class="example-tag">Example verdict · scan a chit to replace it</span>` : ""}
+    <div class="verdict">
+      <div class="scorebox"><div class="score">${fmt(shown,type)}</div><div class="outof">out of ${R.max} · min ${R.min}</div>${c.override != null ? `<div class="outof">overridden (calc ${fmt(mark.final,type)})</div>` : ""}</div>
+      <div style="display:grid;gap:10px;min-width:0">
+        <div class="chips">${typeChip}${aiChip}${(ev.factual_issues||[]).length ? `<span class="chip warn">${ev.factual_issues.length} factual issue${ev.factual_issues.length>1?"s":""}</span>` : ""}</div>
+        <dl class="meta"><dt>From</dt><dd>${esc(ev.from || "—missing—")}</dd><dt>To</dt><dd>${esc(ev.to || "—missing—")}</dd><dt>Subject</dt><dd>${esc(ev.subject || "")}</dd></dl>
+        <p style="margin:0">${esc(ev.summary || "")}</p>
+      </div>
+    </div>
+    <div class="cols">
+      <div style="display:grid;gap:10px">
+        <h3>Criteria (out of 10)</h3>
+        <div class="bars">${Object.keys(WEIGHTS[type]).map(k => `<div class="bar"><span>${LABELS[k]}</span><div class="track"><div class="fill" style="width:${mark.part[k]*10}%"></div></div><span class="v">${mark.part[k]}</span></div>`).join("")}</div>
+      </div>
+      <div style="display:grid;gap:10px">
+        <h3>Format check</h3>
+        <ul class="checks">${checks.map(([l,v]) => `<li><span class="${v ? "ok" : "no"}">${v ? "✓" : "✗"}</span>${l}</li>`).join("")}</ul>
+      </div>
+    </div>
+    <div style="display:grid;gap:8px">
+      <h3>AI-writing check</h3>
+      <div class="aimeter" role="img" aria-label="AI likelihood ${mark.ai} percent"><i style="left:${mark.ai}%"></i></div>
+      <div class="range-note">0 human · 50 possible · 75 likely AI</div>
+      ${li(ev.ai && ev.ai.signals)}
+      ${heur.hits.length ? `<p class="hint">Stock AI phrases found: ${heur.hits.map(esc).join(", ")}</p>` : ""}
+    </div>
+    <div class="cols">
+      <div style="display:grid;gap:6px"><h3>Strengths</h3>${li(ev.strengths)}</div>
+      <div style="display:grid;gap:6px"><h3>Weaknesses</h3>${li(ev.weaknesses)}</div>
+    </div>
+    ${(ev.factual_issues||[]).length ? `<div style="display:grid;gap:6px"><h3>Factual issues</h3>${li(ev.factual_issues)}</div>` : ""}
+    <div style="display:grid;gap:6px"><h3>Transcription</h3><div class="transcript">${highlight(c.text)}</div></div>
+    <div style="display:grid;gap:6px"><h3>How this mark was reached</h3><div class="calc">${mark.steps.map(esc).join("<br>")}</div></div>
+    ${isExample ? "" : `<div class="override">
+      <label for="ovIn">Rapporteur override</label>
+      <input id="ovIn" type="number" step="0.1" min="${R.min}" max="${R.max}" value="${fmt(shown,type)}">
+      <button class="small" id="ovBtn" type="button">Apply</button>
+      <button class="small ghost" id="switchType" type="button">Re-mark as ${type === "normal" ? "substantive" : "normal"}</button>
+      <span class="status" id="ovStatus"></span>
+    </div>`}`;
+  if (isExample) return;
+  $("#ovBtn").onclick = async () => {
+    let v = Number($("#ovIn").value);
+    if (!isFinite(v)){ $("#ovStatus").textContent = "Enter a number."; return; }
+    const clamped = Math.round(clamp(v, R.min, R.max)*10)/10;
+    c.override = clamped === mark.final ? null : clamped;
+    renderResult(c);
+    if (v !== clamped) $("#ovStatus").textContent = `Kept inside ${R.min}–${R.max}.`;
+    await saveEntry(c); if (batchRows.length) renderBatch();
+  };
+  $("#switchType").onclick = async () => {
+    c.type = type === "normal" ? "substantive" : "normal"; c.forced = c.type; c.override = null;
+    c.mark = computeMark(c.ev, c.type, c.heur);
+    renderResult(c); await saveEntry(c); if (batchRows.length) renderBatch();
+  };
+}
+
+/* ---------- register storage ---------- */
+function toEntry(c){
+  return { id:c.id, at:c.at, from:String(c.ev.from || "Unknown"), to:String(c.ev.to || ""), type:c.type,
+    score: c.override ?? c.mark.final, calc:c.mark.final, overridden: c.override != null, ai:c.mark.ai, band:c.mark.band,
+    summary:String(c.ev.summary || "").slice(0,400), excerpt:c.text.slice(0,240) };
+}
+async function saveEntry(c){
+  if (!c) return;
+  const e = toEntry(c);
+  try{
+    if (store.kind === "db"){ await store.col.doc(e.id).set(e); }
+    else { const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.unshift(e); saveLocal(); renderRegister(); }
+    if (!batchRows.length) setStatus(`Saved to the register: ${normName(e.from)}, ${fmt(e.score,e.type)}.`);
+  }catch{ setStatus("Marked, but saving to the register failed. Note the score down.", true); }
+}
+async function removeEntry(id){
+  try{
+    if (store.kind === "db") await store.col.doc(id).delete();
+    else { entries = entries.filter(x => x.id !== id); saveLocal(); renderRegister(); }
+  }catch{ $("#regStatus").textContent = "Could not remove that row."; }
+}
+function saveLocal(){ try{ localStorage.setItem("chitRegister", JSON.stringify(entries)); }catch{} }
+function loadLocal(){ try{ entries = JSON.parse(localStorage.getItem("chitRegister") || "[]"); }catch{ entries = []; } }
+
+/* One name per delegation, however the chit spelled it. */
+const ALIASES = {
+  "drc":"DRC","dr congo":"DRC","d.r.c":"DRC","congo drc":"DRC","democratic republic of the congo":"DRC","democratic republic of congo":"DRC","drc congo":"DRC",
+  "netherland":"Netherlands","holland":"Netherlands","kingdom of the netherlands":"Netherlands",
+  "usa":"United States","us":"United States","u.s.a":"United States","u.s":"United States","united states of america":"United States","america":"United States",
+  "uk":"United Kingdom","u.k":"United Kingdom","great britain":"United Kingdom","britain":"United Kingdom",
+  "russian federation":"Russia","republic of korea":"South Korea","korea":"South Korea","rok":"South Korea",
+  "prc":"China","people's republic of china":"China","peoples republic of china":"China",
+  "uae":"United Arab Emirates","state of palestine":"Palestine","ksa":"Saudi Arabia","kingdom of saudi arabia":"Saudi Arabia",
+  "islamic republic of iran":"Iran","syrian arab republic":"Syria","türkiye":"Turkey","turkiye":"Turkey","state of israel":"Israel",
+  "swiss confederation":"Switzerland","state of qatar":"Qatar","kingdom of spain":"Spain","kingdom of norway":"Norway","french republic":"France"
+};
+const SMALL = new Set(["of","the","and","de"]);
+function normName(s){
+  let t = String(s || "")
+    .replace(/\([^)]*\)?/g," ").replace(/\[[^\]]*\]?/g," ")
+    .replace(/^\s*(from|fron|frm|form)\s*[:\-–—]?\s*/i,"")
+    .replace(/^\s*(the\s+)?(delegate|delegation|delegates)\s+(of|from)\s+/i,"")
+    .replace(/^\s*the\s+/i,"")
+    .replace(/[.,;:'"!?\-–—\s]+$/,"").replace(/^['"\s]+/,"").replace(/\s+/g," ").trim();
+  if (!t) return "Unknown";
+  const k = t.toLowerCase().replace(/\.$/,"");
+  if (ALIASES[k]) return ALIASES[k];
+  return t.split(" ").map((w,i) => (/^[A-Z.]{2,5}$/.test(w)) ? w : (i && SMALL.has(w.toLowerCase())) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
+function renderRegister(){
+  const log = $("#log"), tally = $("#tally");
+  if (!entries.length){
+    log.innerHTML = `<tr><td class="empty">No chits marked yet. Each chit you mark is added here automatically.</td></tr>`;
+    tally.innerHTML = `<tr><td class="empty">Totals per delegation appear after the first chit.</td></tr>`;
+    return;
+  }
+  const sorted = [...entries].sort((a,b) => b.at - a.at);
+  log.innerHTML = `<tr><th>From</th><th>To</th><th>Type</th><th class="num">Mark</th><th class="num">AI</th><th>Note</th><th></th></tr>` +
+    sorted.map(e => `<tr><td>${esc(normName(e.from))}</td><td>${esc(e.to)}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}${e.overridden ? "*" : ""}</td><td class="num">${e.band === "likely" ? `<span class="chip bad">${e.ai}%</span>` : e.band === "possible" ? `<span class="chip warn">${e.ai}%</span>` : e.ai + "%"}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small ghost" data-del="${esc(e.id)}" type="button" aria-label="Remove this chit">Remove</button></td></tr>`).join("");
+  const by = {};
+  for (const e of entries){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } }
+  const rows = Object.entries(by).map(([k,t]) => ({k,...t,total:t.ns+t.ss})).sort((a,b) => b.total - a.total);
+  tally.innerHTML = `<tr><th>Delegation</th><th class="num">Normal chits</th><th class="num">Normal marks</th><th class="num">Substantive chits</th><th class="num">Substantive marks</th><th class="num">Total</th></tr>` +
+    rows.map(r => `<tr><td>${esc(r.k)}</td><td class="num">${r.n}</td><td class="num">${r.ns.toFixed(1)}</td><td class="num">${r.s}</td><td class="num">${r.ss.toFixed(1)}</td><td class="num"><b>${r.total.toFixed(1)}</b></td></tr>`).join("");
+  log.querySelectorAll("[data-del]").forEach(b => {
+    b.onclick = () => {
+      if (b.dataset.armed){ removeEntry(b.dataset.del); return; }
+      b.dataset.armed = "1"; b.textContent = "Confirm"; setTimeout(() => { if (b.isConnected){ delete b.dataset.armed; b.textContent = "Remove"; } }, 3000);
+    };
+  });
+}
+
+function csv(){
+  const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const head = ["From","To","Type","Mark","Calculated","Overridden","Summary","Excerpt"];
+  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
+  return [head, ...rows].map(r => r.map(q).join(",")).join("\n");
+}
+$("#copyCsv").onclick = async () => {
+  if (!entries.length){ $("#regStatus").textContent = "Nothing to copy yet."; return; }
+  try{ await navigator.clipboard.writeText(csv()); $("#regStatus").textContent = "Copied. Paste into Sheets or Excel."; }
+  catch{ $("#regStatus").textContent = "Copy was blocked here. Use Download CSV instead."; }
+};
+
+/* ---------- example so the first view shows what a verdict looks like ---------- */
+const EXAMPLE_EV = {
+  transcription:"From: Delegate of France\nTo: Delegate of the Russian Federation\nVia: Executive Board\n\nThe delegate of France asks whether the Russian Federation accepts that, under Art. 8 of the ILC Articles on State Responsibility, the conduct of Africa Corps units in Mali is attributable to the Russian state, given reported command and funding links.",
+  detected_type:"substantive", from:"Delegate of France", to:"Delegate of the Russian Federation", via:"Executive Board", subject:"Attribution of PMC conduct",
+  format:{has_from:true,has_to:true,has_via_eb:true,has_clear_purpose:true,third_person:true,diplomatic:true,concise:true},
+  scores:{relevance:9,substance:7,accuracy:8,format:9,language:8},
+  factual_issues:[], ai:{likelihood:18,signals:["Specific, pointed question tied to a live debate","Short and unpolished enough for a hand-written note"]},
+  strengths:["Uses the correct legal test for attribution","Names a concrete, current case"],
+  weaknesses:["Could cite the effective-control standard from Nicaragua (1986) to sharpen the question"],
+  summary:"A focused substantive question pressing Russia on state responsibility for Africa Corps. Well formatted and on agenda."
+};
+(function showExample(){
+  const heur = heuristicAI(EXAMPLE_EV.transcription);
+  renderResult({ ev:EXAMPLE_EV, type:"substantive", forced:"auto", heur, mark:computeMark(EXAMPLE_EV,"substantive",heur), text:EXAMPLE_EV.transcription, override:null }, true);
+})();
+
+/* ---------- capabilities ---------- */
+loadLocal(); renderRegister();
+(async () => {
+  const cl = window.claude;
+  if (!cl || !cl.use){ setStatus("Open this page on claude.ai to mark chits with Claude.", true); $("#storeNote").textContent = "Saved in this browser only."; return; }
+  const [s, db, user, dl] = await Promise.all([cl.use("sample"), cl.use("db"), cl.use("user"), cl.use("downloads")]);
+  sample = s;
+  if (!sample) setStatus("Claude is not available in this view, so chits cannot be marked here.", true);
+  else {
+    const lim = await sample.limits().catch(() => null);
+    if (lim && lim.images && lim.images.maxCount) maxImgs = lim.images.maxCount;
+    if (!lim || !lim.images){ $("#drop").hidden = true; $("#typed").placeholder = "Photos cannot be sent from this view. Type the chit text here."; }
+  }
+  if (dl){ $("#dlCsv").hidden = false; $("#dlCsv").onclick = async () => {
+    if (!entries.length){ $("#regStatus").textContent = "Nothing to download yet."; return; }
+    try{ await dl.save({ filename:"unsc-chit-marks.csv", data:csv() }); $("#regStatus").textContent = "Saved."; }catch(e){ if (e?.code !== "cancelled") $("#regStatus").textContent = "Download did not complete."; }
+  }; }
+  const uid = user ? await user.id() : null;
+  if (db && uid){
+    const local = entries.slice();
+    store = { kind:"db", col: db.collection("data/users/" + uid + "/chits") };
+    let first = true;
+    const timer = setTimeout(() => { if (first) $("#storeNote").textContent = "Still connecting to your saved marks…"; }, 10000);
+    store.col.orderBy("at","desc").onSnapshot(snap => {
+      clearTimeout(timer);
+      entries = snap.docs.map(d => d.data());
+      if (first){ first = false;
+        const have = new Set(entries.map(e => e.id));
+        for (const e of local) if (!have.has(e.id)) store.col.doc(e.id).set(e).catch(() => {});
+        try{ localStorage.removeItem("chitRegister"); }catch{}
+      }
+      $("#storeNote").textContent = "Saved to your account. Only you can see this register, on any device.";
+      renderRegister();
+    }, () => { clearTimeout(timer); $("#storeNote").textContent = "Could not load saved marks. New marks are still being saved."; });
+  } else {
+    $("#storeNote").textContent = "Saved in this browser only. Copy the CSV before closing.";
+  }
+})();
+})();
+</script>

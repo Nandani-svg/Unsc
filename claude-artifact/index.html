@@ -38,7 +38,19 @@ h3{font:600 15px/1.3 var(--body);margin:0}
 .range-note{font:12px/1.4 var(--mono);color:var(--muted)}
 .drop{border:1.5px dashed var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;justify-items:center;text-align:center;background:var(--sunk)}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
-.drop img{max-height:260px;border-radius:6px;border:1px solid var(--line)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px;width:100%}
+.thumb{position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.thumb img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.thumb .x{position:absolute;top:4px;right:4px;width:26px;height:26px;padding:0;justify-content:center;border-radius:50%;font-size:15px;line-height:1;background:var(--surface);opacity:.92}
+.thumb .n{position:absolute;left:4px;bottom:4px;font:600 11px/1 var(--mono);padding:4px 6px;border-radius:4px;background:var(--surface);color:var(--fg)}
+.onechit{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.onechit input{width:18px;height:18px;accent-color:var(--accent)}
+.batch{display:grid;gap:6px}
+.brow{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.brow img{width:44px;height:56px;object-fit:cover;border-radius:4px}
+.brow .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .mk{font:600 16px/1 var(--mono);font-variant-numeric:tabular-nums}
+.brow.sel{border-color:var(--accent);background:var(--accent-soft)}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 button,.btn{font:600 14px/1 var(--body);border-radius:8px;padding:11px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 button:hover,.btn:hover{border-color:var(--accent)}
@@ -126,15 +138,16 @@ tr:last-child td{border-bottom:0}
       </div>
 
       <div class="drop" id="drop">
-        <img id="preview" alt="Scanned chit" hidden>
-        <p class="hint" id="dropHint">Take a photo of the chit, or drop / paste an image here.</p>
+        <div class="thumbs" id="thumbs" hidden></div>
+        <p class="hint" id="dropHint">Take photos of chits, or upload several at once. Each photo is marked as its own chit.</p>
         <div class="btnrow">
-          <label class="btn primary" for="camIn">Scan with camera</label>
-          <label class="btn" for="fileIn">Upload image</label>
-          <button type="button" class="ghost small" id="clearImg" hidden>Remove</button>
+          <label class="btn primary" for="camIn" id="camLbl">Scan with camera</label>
+          <label class="btn" for="fileIn">Upload photos</label>
+          <button type="button" class="ghost small" id="clearImg" hidden>Clear all</button>
         </div>
         <input class="file-hidden" type="file" id="camIn" accept="image/*" capture="environment">
-        <input class="file-hidden" type="file" id="fileIn" accept="image/jpeg,image/png,image/webp,image/gif">
+        <input class="file-hidden" type="file" id="fileIn" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+        <label class="onechit" id="oneChitRow" hidden><input type="checkbox" id="oneChit"> These photos are pages of one chit</label>
       </div>
 
       <div style="display:grid;gap:6px">
@@ -162,6 +175,7 @@ tr:last-child td{border-bottom:0}
 
     <section class="panel" aria-labelledby="resH" id="resultPanel">
       <h2 id="resH">Verdict</h2>
+      <div class="batch" id="batch" hidden></div>
       <div id="result"></div>
     </section>
   </div>
@@ -285,7 +299,7 @@ Reply with ONLY this JSON object:
 }
 
 /* ---------- state ---------- */
-let imageBlob = null, sample = null, current = null, busy = null;
+let photos = [], sample = null, current = null, busy = null, maxImgs = 5, batchRows = [];
 let entries = [], store = { kind:"local", col:null };
 
 const statusEl = $("#status");
@@ -302,20 +316,39 @@ async function shrink(file){
     return await new Promise(r => c.toBlob(b => r(b || file), "image/jpeg", 0.9));
   }catch{ return file; }
 }
-async function takeImage(file){
-  if (!file || !file.type.startsWith("image/")){ setStatus("That file is not an image. Use a JPG, PNG or WebP photo.", true); return; }
-  imageBlob = await shrink(file);
-  const p = $("#preview"); p.src = URL.createObjectURL(imageBlob); p.hidden = false;
-  $("#dropHint").hidden = true; $("#clearImg").hidden = false;
-  setStatus("Image ready. Press Mark this chit.");
+let photoSeq = 0;
+async function takeImages(fileList){
+  const files = [...(fileList || [])].filter(f => f && f.type && f.type.startsWith("image/"));
+  if (!files.length){ setStatus("That file is not an image. Use JPG, PNG or WebP photos.", true); return; }
+  for (const f of files){ const blob = await shrink(f); photos.push({ id: ++photoSeq, blob, url: URL.createObjectURL(blob) }); }
+  renderThumbs();
+  setStatus(photos.length === 1 ? "Photo ready. Add more, or press Mark." : `${photos.length} photos ready. Add more, or press Mark.`);
 }
-for (const id of ["#camIn","#fileIn"]) $(id).addEventListener("change", e => { takeImage(e.target.files[0]); e.target.value = ""; });
-$("#clearImg").onclick = () => { imageBlob = null; $("#preview").hidden = true; $("#dropHint").hidden = false; $("#clearImg").hidden = true; setStatus(""); };
+function renderThumbs(){
+  const t = $("#thumbs");
+  t.innerHTML = photos.map((p,i) => `<div class="thumb"><img src="${p.url}" alt="Chit photo ${i+1}"><span class="n">${i+1}</span><button type="button" class="x" data-rm="${p.id}" aria-label="Remove photo ${i+1}">×</button></div>`).join("");
+  t.hidden = !photos.length;
+  $("#dropHint").hidden = !!photos.length;
+  $("#clearImg").hidden = !photos.length;
+  $("#camLbl").textContent = photos.length ? "Scan another" : "Scan with camera";
+  $("#oneChitRow").hidden = photos.length < 2;
+  t.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
+    const i = photos.findIndex(p => p.id === Number(b.dataset.rm));
+    if (i >= 0){ URL.revokeObjectURL(photos[i].url); photos.splice(i,1); }
+    renderThumbs();
+  });
+  updateMarkLabel();
+}
+function separateMode(){ return photos.length > 1 && !$("#oneChit").checked; }
+function updateMarkLabel(){ if (!busy) $("#markBtn").textContent = separateMode() ? `Mark ${photos.length} chits` : "Mark this chit"; }
+$("#oneChit").addEventListener("change", updateMarkLabel);
+for (const id of ["#camIn","#fileIn"]) $(id).addEventListener("change", e => { takeImages(e.target.files); e.target.value = ""; });
+$("#clearImg").onclick = () => { photos.forEach(p => URL.revokeObjectURL(p.url)); photos = []; $("#oneChit").checked = false; renderThumbs(); setStatus(""); };
 const drop = $("#drop");
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); takeImage(e.dataTransfer.files[0]); });
-document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/")); if (f) takeImage(f); });
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); takeImages(e.dataTransfer.files); });
+document.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/")); if (f.length) takeImages(f); });
 document.querySelectorAll('input[name="ctype"]').forEach(r => r.addEventListener("change", () => {
   const t = chosenType();
   $("#rangeNote").textContent = t === "normal" ? "Normal chit: 0.1 minimum, 1.0 maximum" : t === "substantive" ? "Substantive chit: 1 minimum, 5 maximum" : "Normal 0.1–1.0 · Substantive 1–5";
@@ -334,33 +367,96 @@ const ERR = {
   cancelled:"Marking stopped."
 };
 
+const STOP_ALL = new Set(["not_granted","sampling_disabled","images_unavailable","rate_limited","session_expired","cancelled","not_declared","capability_disabled"]);
+const newId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* Mark one chit (one or more images of it, or typed text). Returns the chit, or null if unreadable. */
+async function markOne(images, typed, forced, signal){
+  const opts = { signal, cache:false };
+  if (images.length) opts.images = images;
+  let prompt = buildPrompt(typed, forced, images.length > 0);
+  if (images.length > 1) prompt = `There are ${images.length} images: they are pages or sides of the SAME single chit, in order. Transcribe them together as one chit.\n\n` + prompt;
+  const ev = await sample.json(prompt, opts);
+  if (!ev || typeof ev !== "object") throw {code:"invalid_json"};
+  if (ev.legible === false) return null;
+  const type = forced === "auto" ? (ev.detected_type === "substantive" ? "substantive" : "normal") : forced;
+  const text = String(ev.transcription || typed || "");
+  const heur = heuristicAI(text);
+  return { id:newId(), at:Date.now(), type, forced, ev, heur, mark:computeMark(ev, type, heur), text, override:null };
+}
+
+function renderBatch(){
+  const box = $("#batch");
+  box.hidden = !batchRows.length;
+  const done = batchRows.filter(r => r.state === "done").length;
+  box.innerHTML = `<div class="range-note">${done} of ${batchRows.length} marked${batchRows.some(r => r.state === "queued" || r.state === "marking") ? " · keep this page open" : ""}</div>` +
+    batchRows.map((r,i) => {
+      const c = r.chit;
+      const right = r.state === "done" ? `<span class="mk">${fmt(c.override ?? c.mark.final, c.type)}</span>` :
+        r.state === "marking" ? `<span class="spin" style="width:18px;height:18px;border-width:2px"></span>` :
+        r.state === "failed" ? `<span class="chip bad">Failed</span>` : r.state === "unreadable" ? `<span class="chip warn">Unreadable</span>` : `<span class="chip">Waiting</span>`;
+      const who = c ? `${esc(normName(c.ev.from))} · ${c.type === "normal" ? "Normal" : "Substantive"}${c.mark.band !== "clear" ? ` · AI ${c.mark.ai}%` : ""}` : esc(r.note || `Chit ${i+1}`);
+      return `<div class="brow${c && c === current ? " sel" : ""}"><img src="${r.url}" alt=""><span class="who">${who}</span>${right}${c ? `<button class="small" type="button" data-view="${i}">View</button>` : "<span></span>"}</div>`;
+    }).join("");
+  box.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { current = batchRows[Number(b.dataset.view)].chit; renderResult(current); renderBatch(); });
+}
+
 $("#markBtn").onclick = async () => {
   if (busy){ busy.abort(); return; }
   const typed = $("#typed").value.trim();
-  if (!imageBlob && !typed){ setStatus("Scan or upload a chit, or type its text, first.", true); return; }
+  if (!photos.length && !typed){ setStatus("Scan or upload a chit, or type its text, first.", true); return; }
   if (!sample){ setStatus("Claude is not connected in this view, so chits cannot be marked here. Open the page on claude.ai.", true); return; }
   const forced = chosenType();
-  const opts = { signal:(busy = new AbortController()).signal, cache:false };
-  if (imageBlob) opts.images = [imageBlob];
+  busy = new AbortController(); const signal = busy.signal;
   $("#markBtn").textContent = "Stop";
   setStatus("");
-  $("#result").innerHTML = `<div class="thinking"><div class="spin"></div><div>Reading the chit and checking it against the agenda…<br><span class="hint">This usually takes 15–40 seconds.</span></div></div>`;
   try{
-    const ev = await sample.json(buildPrompt(typed, forced, !!imageBlob), opts);
-    if (!ev || typeof ev !== "object") throw {code:"invalid_json"};
-    if (ev.legible === false){ $("#result").innerHTML = ""; renderEmpty("The chit could not be read. Retake the photo flat, in good light, or type the text."); return; }
-    const type = forced === "auto" ? (ev.detected_type === "substantive" ? "substantive" : "normal") : forced;
-    const text = String(ev.transcription || typed || "");
-    const heur = heuristicAI(text);
-    const mark = computeMark(ev, type, heur);
-    current = { id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,6), at: Date.now(), type, forced, ev, heur, mark, text, saved:false, override:null };
-    renderResult(current);
-    await saveCurrent();
+    if (!separateMode()){
+      batchRows = []; renderBatch();
+      const imgs = photos.slice(0, maxImgs).map(p => p.blob);
+      $("#result").innerHTML = `<div class="thinking"><div class="spin"></div><div>Reading the chit and checking it against the agenda…<br><span class="hint">This usually takes 15–40 seconds.</span></div></div>`;
+      const c = await markOne(imgs, typed, forced, signal);
+      if (!c){ renderEmpty("The chit could not be read. Retake the photo flat, in good light, or type the text."); return; }
+      current = c; renderResult(c); await saveEntry(c);
+      photos.forEach(ph => URL.revokeObjectURL(ph.url)); photos = []; $("#oneChit").checked = false; renderThumbs(); $("#typed").value = "";
+      return;
+    }
+    // Several photos, each its own chit: two at a time.
+    if (typed) setStatus("Typed text is not used when photos are marked as separate chits.");
+    batchRows = photos.map(p => ({ photo:p, url:p.url, state:"queued", chit:null }));
+    current = null; renderBatch();
+    $("#result").innerHTML = "";
+    let next = 0, fatal = null;
+    const worker = async () => {
+      while (!fatal && !signal.aborted && next < batchRows.length){
+        const r = batchRows[next++];
+        r.state = "marking"; renderBatch();
+        try{
+          const c = await markOne([r.photo.blob], "", forced, signal);
+          if (!c){ r.state = "unreadable"; r.note = "Could not read this photo"; }
+          else { r.chit = c; r.state = "done"; await saveEntry(c); if (!current){ current = c; renderResult(c); } }
+        }catch(e){
+          const code = e && e.code;
+          if (STOP_ALL.has(code)){ fatal = code; r.state = code === "cancelled" ? "queued" : "failed"; }
+          else { r.state = "failed"; r.note = ERR[code] || "Could not mark this photo"; }
+        }
+        renderBatch();
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    const ok = batchRows.filter(r => r.state === "done").length;
+    // Keep only photos that still need marking in the tray.
+    const keep = new Set(batchRows.filter(r => r.state !== "done").map(r => r.photo.id));
+    photos = photos.filter(p => keep.has(p.id));
+    renderThumbs();
+    if (fatal) setStatus(`${ok} marked. ${ERR[fatal] || "Stopped."}${photos.length ? " Unmarked photos are still in the tray." : ""}`, fatal !== "cancelled");
+    else setStatus(`${ok} of ${batchRows.length} chits marked and saved.${photos.length ? " Photos that failed are still in the tray: press Mark to try them again." : ""}`, ok < batchRows.length);
+    if (!current) renderEmpty("No chit could be marked. Retake the photos flat, in good light.", true);
   }catch(e){
     const code = e && e.code;
-    renderEmpty(ERR[code] || "Marking failed because of a connection problem. Press Mark this chit to try again.", code !== "cancelled");
+    renderEmpty(ERR[code] || "Marking failed because of a connection problem. Press Mark to try again.", code !== "cancelled");
   }finally{
-    busy = null; $("#markBtn").textContent = "Mark this chit";
+    busy = null; updateMarkLabel();
   }
 };
 
@@ -427,12 +523,12 @@ function renderResult(c, isExample){
     c.override = clamped === mark.final ? null : clamped;
     renderResult(c);
     if (v !== clamped) $("#ovStatus").textContent = `Kept inside ${R.min}–${R.max}.`;
-    await saveCurrent();
+    await saveEntry(c); if (batchRows.length) renderBatch();
   };
   $("#switchType").onclick = async () => {
     c.type = type === "normal" ? "substantive" : "normal"; c.forced = c.type; c.override = null;
     c.mark = computeMark(c.ev, c.type, c.heur);
-    renderResult(c); await saveCurrent();
+    renderResult(c); await saveEntry(c); if (batchRows.length) renderBatch();
   };
 }
 
@@ -442,13 +538,13 @@ function toEntry(c){
     score: c.override ?? c.mark.final, calc:c.mark.final, overridden: c.override != null, ai:c.mark.ai, band:c.mark.band,
     summary:String(c.ev.summary || "").slice(0,400), excerpt:c.text.slice(0,240) };
 }
-async function saveCurrent(){
-  if (!current) return;
-  const e = toEntry(current);
+async function saveEntry(c){
+  if (!c) return;
+  const e = toEntry(c);
   try{
     if (store.kind === "db"){ await store.col.doc(e.id).set(e); }
     else { const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.unshift(e); saveLocal(); renderRegister(); }
-    setStatus(`Saved to the register: ${e.from}, ${fmt(e.score,e.type)}.`);
+    if (!batchRows.length) setStatus(`Saved to the register: ${normName(e.from)}, ${fmt(e.score,e.type)}.`);
   }catch{ setStatus("Marked, but saving to the register failed. Note the score down.", true); }
 }
 async function removeEntry(id){
@@ -547,6 +643,7 @@ loadLocal(); renderRegister();
   if (!sample) setStatus("Claude is not available in this view, so chits cannot be marked here.", true);
   else {
     const lim = await sample.limits().catch(() => null);
+    if (lim && lim.images && lim.images.maxCount) maxImgs = lim.images.maxCount;
     if (!lim || !lim.images){ $("#drop").hidden = true; $("#typed").placeholder = "Photos cannot be sent from this view. Type the chit text here."; }
   }
   if (dl){ $("#dlCsv").hidden = false; $("#dlCsv").onclick = async () => {
