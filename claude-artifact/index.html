@@ -193,6 +193,10 @@ tr:last-child td{border-bottom:0}
     <div class="tablewrap"><table id="tally"></table></div>
     <h3>Every chit</h3>
     <div class="tablewrap"><table id="log"></table></div>
+    <details id="removedBox" hidden>
+      <summary class="hint" style="cursor:pointer">Removed chits (<span id="remCount">0</span>) · tap Restore to bring one back</summary>
+      <div class="tablewrap" style="margin-top:8px"><table id="removed"></table></div>
+    </details>
     <div class="status" id="regStatus" role="status"></div>
   </section>
 </div>
@@ -547,12 +551,17 @@ async function saveEntry(c){
     if (!batchRows.length) setStatus(`Saved to the register: ${normName(e.from)}, ${fmt(e.score,e.type)}.`);
   }catch{ setStatus("Marked, but saving to the register failed. Note the score down.", true); }
 }
-async function removeEntry(id){
+/* Remove is reversible: the chit is only marked as removed and can be restored. */
+async function setRemoved(id, flag){
+  const e = entries.find(x => x.id === id); if (!e) return;
+  const next = { ...e, removed: flag };
   try{
-    if (store.kind === "db") await store.col.doc(id).delete();
-    else { entries = entries.filter(x => x.id !== id); saveLocal(); renderRegister(); }
-  }catch{ $("#regStatus").textContent = "Could not remove that row."; }
+    if (store.kind === "db") await store.col.doc(id).set(next);
+    else { entries = entries.map(x => x.id === id ? next : x); saveLocal(); renderRegister(); }
+    $("#regStatus").textContent = flag ? `Removed ${normName(e.from)}'s chit. You can restore it under "Removed chits".` : `Restored ${normName(e.from)}'s chit.`;
+  }catch{ $("#regStatus").textContent = flag ? "Could not remove that row." : "Could not restore that row."; }
 }
+const live = () => entries.filter(e => !e.removed);
 function saveLocal(){ try{ localStorage.setItem("chitRegister", JSON.stringify(entries)); }catch{} }
 function loadLocal(){ try{ entries = JSON.parse(localStorage.getItem("chitRegister") || "[]"); }catch{ entries = []; } }
 
@@ -584,35 +593,37 @@ function normName(s){
 
 function renderRegister(){
   const log = $("#log"), tally = $("#tally");
-  if (!entries.length){
+  const gone = entries.filter(e => e.removed).sort((a,b) => b.at - a.at);
+  $("#removedBox").hidden = !gone.length; $("#remCount").textContent = gone.length;
+  $("#removed").innerHTML = gone.map(e => `<tr><td>${esc(normName(e.from))}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small" data-restore="${esc(e.id)}" type="button">Restore</button></td></tr>`).join("");
+  $("#removed").querySelectorAll("[data-restore]").forEach(b => b.onclick = () => setRemoved(b.dataset.restore, false));
+  const entriesLive = live();
+  if (!entriesLive.length){
     log.innerHTML = `<tr><td class="empty">No chits marked yet. Each chit you mark is added here automatically.</td></tr>`;
     tally.innerHTML = `<tr><td class="empty">Totals per delegation appear after the first chit.</td></tr>`;
     return;
   }
-  const sorted = [...entries].sort((a,b) => b.at - a.at);
+  const sorted = [...entriesLive].sort((a,b) => b.at - a.at);
   log.innerHTML = `<tr><th>From</th><th>To</th><th>Type</th><th class="num">Mark</th><th class="num">AI</th><th>Note</th><th></th></tr>` +
     sorted.map(e => `<tr><td>${esc(normName(e.from))}</td><td>${esc(e.to)}</td><td>${e.type === "normal" ? "Normal" : "Substantive"}</td><td class="num">${fmt(e.score,e.type)}${e.overridden ? "*" : ""}</td><td class="num">${e.band === "likely" ? `<span class="chip bad">${e.ai}%</span>` : e.band === "possible" ? `<span class="chip warn">${e.ai}%</span>` : e.ai + "%"}</td><td style="max-width:320px">${esc(e.summary)}</td><td><button class="small ghost" data-del="${esc(e.id)}" type="button" aria-label="Remove this chit">Remove</button></td></tr>`).join("");
   const by = {};
-  for (const e of entries){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } }
+  for (const e of entriesLive){ const k = normName(e.from); const t = by[k] ||= {n:0,s:0,ns:0,ss:0}; if (e.type === "normal"){ t.n++; t.ns += e.score; } else { t.s++; t.ss += e.score; } }
   const rows = Object.entries(by).map(([k,t]) => ({k,...t,total:t.ns+t.ss})).sort((a,b) => b.total - a.total);
   tally.innerHTML = `<tr><th>Delegation</th><th class="num">Normal chits</th><th class="num">Normal marks</th><th class="num">Substantive chits</th><th class="num">Substantive marks</th><th class="num">Total</th></tr>` +
     rows.map(r => `<tr><td>${esc(r.k)}</td><td class="num">${r.n}</td><td class="num">${r.ns.toFixed(1)}</td><td class="num">${r.s}</td><td class="num">${r.ss.toFixed(1)}</td><td class="num"><b>${r.total.toFixed(1)}</b></td></tr>`).join("");
   log.querySelectorAll("[data-del]").forEach(b => {
-    b.onclick = () => {
-      if (b.dataset.armed){ removeEntry(b.dataset.del); return; }
-      b.dataset.armed = "1"; b.textContent = "Confirm"; setTimeout(() => { if (b.isConnected){ delete b.dataset.armed; b.textContent = "Remove"; } }, 3000);
-    };
+    b.onclick = () => setRemoved(b.dataset.del, true);
   });
 }
 
 function csv(){
   const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
   const head = ["From","To","Type","Mark","Calculated","Overridden","Summary","Excerpt"];
-  const rows = [...entries].sort((a,b) => a.at - b.at).map(e => [normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
+  const rows = live().sort((a,b) => a.at - b.at).map(e => [normName(e.from), e.to, e.type, fmt(e.score,e.type), fmt(e.calc,e.type), e.overridden ? "yes" : "no", e.summary, e.excerpt]);
   return [head, ...rows].map(r => r.map(q).join(",")).join("\n");
 }
 $("#copyCsv").onclick = async () => {
-  if (!entries.length){ $("#regStatus").textContent = "Nothing to copy yet."; return; }
+  if (!live().length){ $("#regStatus").textContent = "Nothing to copy yet."; return; }
   try{ await navigator.clipboard.writeText(csv()); $("#regStatus").textContent = "Copied. Paste into Sheets or Excel."; }
   catch{ $("#regStatus").textContent = "Copy was blocked here. Use Download CSV instead."; }
 };
@@ -647,26 +658,31 @@ loadLocal(); renderRegister();
     if (!lim || !lim.images){ $("#drop").hidden = true; $("#typed").placeholder = "Photos cannot be sent from this view. Type the chit text here."; }
   }
   if (dl){ $("#dlCsv").hidden = false; $("#dlCsv").onclick = async () => {
-    if (!entries.length){ $("#regStatus").textContent = "Nothing to download yet."; return; }
+    if (!live().length){ $("#regStatus").textContent = "Nothing to download yet."; return; }
     try{ await dl.save({ filename:"unsc-chit-marks.csv", data:csv() }); $("#regStatus").textContent = "Saved."; }catch(e){ if (e?.code !== "cancelled") $("#regStatus").textContent = "Download did not complete."; }
   }; }
   const uid = user ? await user.id() : null;
-  if (db && uid){
+  let col = null;
+  if (db && uid){ try{ col = db.collection("data/users/" + uid); }catch{ col = null; } }
+  if (col){
     const local = entries.slice();
-    store = { kind:"db", col: db.collection("data/users/" + uid + "/chits") };
+    store = { kind:"db", col };
     let first = true;
     const timer = setTimeout(() => { if (first) $("#storeNote").textContent = "Still connecting to your saved marks…"; }, 10000);
     store.col.orderBy("at","desc").onSnapshot(snap => {
       clearTimeout(timer);
-      entries = snap.docs.map(d => d.data());
+      const fromDb = snap.docs.map(d => d.data()).filter(e => e && e.id);
       if (first){ first = false;
-        const have = new Set(entries.map(e => e.id));
-        for (const e of local) if (!have.has(e.id)) store.col.doc(e.id).set(e).catch(() => {});
-        try{ localStorage.removeItem("chitRegister"); }catch{}
-      }
+        // Move anything saved only in this browser into the account. The browser copy stays as a backup.
+        const have = new Set(fromDb.map(e => e.id));
+        const missing = local.filter(e => !have.has(e.id));
+        for (const e of missing) store.col.doc(e.id).set(e).catch(() => {});
+        entries = [...fromDb, ...missing];
+      } else entries = fromDb;
+      saveLocal();
       $("#storeNote").textContent = "Saved to your account. Only you can see this register, on any device.";
       renderRegister();
-    }, () => { clearTimeout(timer); $("#storeNote").textContent = "Could not load saved marks. New marks are still being saved."; });
+    }, () => { clearTimeout(timer); store = { kind:"local", col:null }; $("#storeNote").textContent = "Could not reach your account, so marks are saved in this browser only. Download the CSV as a backup."; renderRegister(); });
   } else {
     $("#storeNote").textContent = "Saved in this browser only. Copy the CSV before closing.";
   }
